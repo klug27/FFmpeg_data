@@ -1,0 +1,26 @@
+body {
+  background-color: #f8f9fa;
+}
+
+.container {
+  max-width: 600px;
+}
+
+video {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+button:hover {
+  transform: scale(1.02);
+  transition: transform 0.2s ease;
+}
+
+.progress-bar {
+  transition: width 0.4s ease;
+}
+
+.btn, .video, .progress-bar {
+  border-radius: 6px;
+}
+
