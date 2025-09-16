@@ -6,46 +6,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const { FFmpeg } = FFmpegWASM;
   const ffmpeg = new FFmpeg();
+  let ffmpegLoaded = false;
 
-  const loadBtn = document.getElementById('loadBtn');
   const convertBtn = document.getElementById('convertBtn');
   const imageInput = document.getElementById('imageInput');
+  const resizeToggle = document.getElementById('resizeToggle');
   const progressContainer = document.getElementById('progressContainer');
   const progressBar = document.getElementById('progressBar');
+  const spinner = document.getElementById('spinner');
   const preview = document.getElementById('preview');
   const downloadLink = document.getElementById('downloadLink');
   const log = document.getElementById('log');
 
+  let progressReceived = false;
+
   ffmpeg.on('progress', ({ ratio }) => {
-    const percent = Math.round(ratio * 100);
-    progressBar.style.width = percent + '%';
-    progressBar.textContent = percent + '%';
+    if (typeof ratio === 'number') {
+      progressReceived = true;
+      const percent = Math.round(ratio * 100);
+      progressBar.style.width = percent + '%';
+      progressBar.textContent = percent + '%';
+    }
   });
 
   ffmpeg.on('log', ({ message }) => console.log(message));
 
-  loadBtn.addEventListener('click', async () => {
-    loadBtn.disabled = true;
-    log.textContent = "Chargement de FFmpeg...";
-    await ffmpeg.load({
-      coreURL: '/ffmpeg/ffmpeg-core.js',
-      wasmURL: '/ffmpeg/ffmpeg-core.wasm',
-      workerURL: '/ffmpeg/ffmpeg-core.worker.js'
-    });
-    log.textContent = "✅ FFmpeg chargé.";
-    convertBtn.classList.remove('d-none');
-  });
-
   convertBtn.addEventListener('click', async () => {
     const file = imageInput.files[0];
     if (!file) {
-      alert("📂 Sélectionne une image d'abord.");
+      alert("📂 Veuillez d'abord sélectionner une image.");
       return;
     }
 
+    convertBtn.classList.add('btn-converting');
     convertBtn.disabled = true;
+    log.textContent = "Préparation de FFmpeg...";
+    progressReceived = false;
+
+    // Affiche le spinner immédiatement
+    spinner.classList.remove('d-none');
+    // Prépare la barre mais ne l'affiche que si nécessaire
+    progressBar.style.width = '0%';
+    progressBar.textContent = '0%';
+    progressContainer.classList.add('d-none');
+
+    if (!ffmpegLoaded) {
+      await ffmpeg.load({
+        coreURL: '/ffmpeg/ffmpeg-core.js',
+        wasmURL: '/ffmpeg/ffmpeg-core.wasm',
+        workerURL: '/ffmpeg/ffmpeg-core.worker.js'
+      });
+      ffmpegLoaded = true;
+      log.textContent = "✅ FFmpeg chargé.";
+    }
+
     log.textContent = "Conversion en cours...";
-    progressContainer.classList.remove('d-none');
 
     const ext = file.name.split('.').pop().toLowerCase();
     const inputName = `input.${ext}`;
@@ -53,12 +68,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     await ffmpeg.writeFile(inputName, inputData);
 
-    await ffmpeg.exec([
-      '-i', inputName,
-      '-vf', 'scale=192:160',
-      '-pix_fmt', 'bgr24',
-      'output.bmp'
-    ]);
+    const args = ['-i', inputName];
+    if (resizeToggle.checked) {
+      args.push('-vf', 'scale=192:160');
+    }
+    args.push('-pix_fmt', 'bgr24', 'output.bmp');
+
+    await ffmpeg.exec(args);
 
     const outputData = await ffmpeg.readFile('output.bmp');
     const bmpBlob = new Blob([outputData.buffer], { type: 'image/bmp' });
@@ -69,5 +85,16 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadLink.href = bmpURL;
     downloadLink.classList.remove('d-none');
     log.textContent = "✅ Conversion terminée.";
+
+    // Affiche la barre uniquement si FFmpeg a fourni un ratio
+    if (progressReceived) {
+      progressContainer.classList.remove('d-none');
+    } else {
+      progressContainer.classList.add('d-none');
+    }
+
+    spinner.classList.add('d-none');
+    convertBtn.classList.remove('btn-converting');
+    convertBtn.disabled = false;
   });
 });

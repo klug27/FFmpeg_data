@@ -12,11 +12,24 @@
     <h1>🖼️ Convertisseur Image → BMP</h1>
 
     <input type="file" id="imageInput" accept="image/*" class="form-control mb-3">
-    <button id="loadBtn" class="btn btn-secondary w-100 mb-3">Charger FFmpeg</button>
-    <button id="convertBtn" class="btn btn-primary w-100 mb-3 d-none">Convertir en BMP 192×160</button>
 
+    <div class="form-check form-switch mb-3 text-start">
+      <input class="form-check-input" type="checkbox" id="resizeToggle">
+      <label class="form-check-label" for="resizeToggle">📐 Redimensionner à 192×160</label>
+    </div>
+
+    <button id="convertBtn" class="btn btn-primary w-100 mb-3">Convertir en BMP</button>
+
+    <!-- Spinner circulaire -->
+    <div id="spinner" class="d-none text-center mb-3">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Chargement...</span>
+      </div>
+    </div>
+
+    <!-- Barre de progression -->
     <div class="progress d-none" id="progressContainer">
-      <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" style="width: 0%">0%</div>
+      <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="progressBar" style="width: 0%">0%</div>
     </div>
 
     <img id="preview" class="mt-3 w-100 d-none" alt="Image convertie">
@@ -24,7 +37,6 @@
     <p id="log" class="mt-3 text-muted small"></p>
   </div>
 
-  <!-- FFmpeg embarqué localement -->
   <script src="/ffmpeg/ffmpeg.js"></script>
   <script src="config.js"></script>
 </body>
