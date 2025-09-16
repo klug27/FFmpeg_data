@@ -1,26 +1,41 @@
 body {
   background-color: #f8f9fa;
+  font-family: system-ui, sans-serif;
 }
 
 .container {
   max-width: 600px;
+  margin: auto;
 }
 
-video {
+video,
+img {
   border: 1px solid #dee2e6;
-  border-radius: 4px;
+  border-radius: 6px;
+  max-height: 240px;
+  object-fit: contain;
 }
 
-button:hover {
-  transform: scale(1.02);
-  transition: transform 0.2s ease;
+input[type="file"] {
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .progress-bar {
   transition: width 0.4s ease;
 }
 
-.btn, .video, .progress-bar {
-  border-radius: 6px;
+#downloadLink {
+  display: inline-block;
+  padding: 10px 20px;
+  font-weight: bold;
 }
 
+#log {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
