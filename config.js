@@ -1,13 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-  if (typeof FFmpegWASM === 'undefined' || typeof FFmpegWASM.FFmpeg === 'undefined') {
-    alert("❌ FFmpegWASM n'est pas chargé. Vérifie le script ffmpeg.js.");
-    return;
-  }
-
   const { FFmpeg } = FFmpegWASM;
   const ffmpeg = new FFmpeg();
   let ffmpegLoaded = false;
   let cancelRequested = false;
+  let totalUs = 0;
+  let durationText = '';
 
   const convertVideoBtn = document.getElementById('convertVideoBtn');
   const cancelBtn = document.getElementById('cancelBtn');
@@ -21,18 +18,45 @@ document.addEventListener('DOMContentLoaded', () => {
   const downloadLink = document.getElementById('downloadLink');
   const log = document.getElementById('log');
 
-  let progressReceived = false;
-
-  ffmpeg.on('progress', ({ ratio }) => {
-    if (typeof ratio === 'number') {
-      progressReceived = true;
-      const percent = Math.round(ratio * 100);
-      progressBar.style.width = percent + '%';
-      progressBar.textContent = percent + '%';
+  ffmpeg.on('log', ({ message }) => {
+    console.log(message);
+    if (message.includes('Duration:')) {
+      durationText = message;
     }
   });
 
-  ffmpeg.on('log', ({ message }) => console.log(message));
+  ffmpeg.on('progress', ({ time }) => {
+    let currentUs = 0;
+
+    console.log("Durée fichier :", time, "µs");
+    if (typeof time === 'number') {
+      currentUs = time;
+    } else if (typeof time === 'string') {
+      const parts = time.split(':');
+      if (parts.length === 3) {
+        const h = parseInt(parts[0]);
+        const m = parseInt(parts[1]);
+        const s = parseFloat(parts[2]);
+        currentUs = Math.round((h * 3600 + m * 60 + s) * 1_000_000);
+      }
+    } else {
+      console.warn("⚠️ Progress ignoré : time invalide", time);
+      return;
+    }
+
+    if (totalUs > 0) {
+      const ratio = currentUs / totalUs;
+      const percent = Math.min(100, Math.round(ratio * 100));
+      progressBar.style.width = percent + '%';
+      progressBar.textContent = percent < 100 ? `${percent}%` : 'Finalisation...';
+      progressContainer.classList.remove('d-none');
+
+      const seconds = currentUs / 1_000_000;
+      const minutes = Math.floor(seconds / 60);
+      const remaining = (seconds % 60).toFixed(2);
+      log.textContent = `⏱ Temps écoulé : ${minutes} min ${remaining} s`;
+    }
+  });
 
   cancelBtn.addEventListener('click', () => {
     cancelRequested = true;
@@ -51,13 +75,13 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelRequested = false;
     convertVideoBtn.disabled = true;
     log.textContent = "Préparation de FFmpeg...";
-    progressReceived = false;
-
-    spinner.classList.remove('d-none');
     progressBar.style.width = '0%';
     progressBar.textContent = '0%';
     progressContainer.classList.add('d-none');
     downloadLink.classList.add('d-none');
+    spinner.classList.remove('d-none');
+    durationText = '';
+    totalUs = 0;
 
     if (!ffmpegLoaded) {
       await ffmpeg.load({
@@ -69,19 +93,37 @@ document.addEventListener('DOMContentLoaded', () => {
       log.textContent = "✅ FFmpeg chargé.";
     }
 
-    log.textContent = "Conversion en cours...";
-
     const ext = file.name.split('.').pop().toLowerCase();
     const inputName = `input.${ext}`;
     const inputData = new Uint8Array(await file.arrayBuffer());
-
     await ffmpeg.writeFile(inputName, inputData);
+
+    // 🔍 Extraire la durée en microsecondes
+    try {
+      await ffmpeg.exec(['-i', inputName]);
+      const match = durationText.match(/Duration: (\d+):(\d+):(\d+\.\d+)/);
+      if (match) {
+        const [_, h, m, s] = match;
+        totalUs = Math.round((parseInt(h) * 3600 + parseInt(m) * 60 + parseFloat(s)) * 1_000_000);
+        console.log("Durée totale :", totalUs, "µs");
+      }
+    } catch (e) {
+      console.warn("Impossible d'extraire la durée :", e);
+    }
+
+    if (cancelRequested) {
+      log.textContent = "⛔ Conversion annulée avant exécution.";
+      spinner.classList.add('d-none');
+      convertVideoBtn.disabled = false;
+      return;
+    }
+
+    log.textContent = "Conversion en cours...";
 
     const args = ['-i', inputName];
 
-    // Construction dynamique du filtre -vf
+    // 🎛️ Construction dynamique du filtre -vf
     const vfParts = [];
-
     const width = widthInput.value.trim();
     const height = heightInput.value.trim();
     if (width && height) {
@@ -98,13 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     args.push('-pix_fmt', 'bgr24', 'output.rgb');
-
-    if (cancelRequested) {
-      log.textContent = "⛔ Conversion annulée avant exécution.";
-      spinner.classList.add('d-none');
-      convertVideoBtn.disabled = false;
-      return;
-    }
 
     try {
       await ffmpeg.exec(args);
@@ -132,16 +167,11 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadLink.classList.remove('d-none');
     log.textContent = `✅ Conversion terminée. Taille : ${rgbBlob.size} octets.`;
 
-    if (progressReceived) {
-      progressContainer.classList.remove('d-none');
-    } else {
-      progressContainer.classList.add('d-none');
-    }
-
+    progressContainer.classList.remove('d-none');
     spinner.classList.add('d-none');
     convertVideoBtn.disabled = false;
 
-    // Nettoyage mémoire
+    // 🧼 Nettoyage mémoire
     ffmpeg.deleteFile(inputName);
     ffmpeg.deleteFile('output.rgb');
   });
