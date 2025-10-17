@@ -16,11 +16,23 @@
   <div class="container text-center mt-5">
     <h1>🎥 Convertisseur Vidéo → RGB brut</h1>
 
+    <!-- Sélection de fichier vidéo -->
     <input type="file" id="videoInput" accept="video/*" class="form-control mb-3">
 
-    <input type="text" id="filterInput" class="form-control mb-3" placeholder="Filtre FFmpeg (ex: scale=192:160)">
+    <!-- Paramètres facultatifs -->
+    <input type="number" id="fpsInput" class="form-control mb-3" placeholder="FPS (facultatif)">
+    <div class="row mb-3">
+      <div class="col">
+        <input type="number" id="widthInput" class="form-control" placeholder="Largeur (facultatif)">
+      </div>
+      <div class="col">
+        <input type="number" id="heightInput" class="form-control" placeholder="Hauteur (facultatif)">
+      </div>
+    </div>
 
+    <!-- Boutons -->
     <button id="convertVideoBtn" class="btn btn-primary w-100 mb-3">Convertir en .RGB</button>
+    <button id="cancelBtn" class="btn btn-outline-danger w-100 mb-3">⛔ Annuler la conversion</button>
 
     <!-- Spinner circulaire -->
     <div id="spinner" class="d-none text-center mb-3">
@@ -34,7 +46,10 @@
       <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="progressBar" style="width: 0%">0%</div>
     </div>
 
+    <!-- Lien de téléchargement -->
     <a id="downloadLink" class="btn btn-success mt-3 d-none" download="converted.rgb">📥 Télécharger RGB</a>
+
+    <!-- Log d’état -->
     <p id="log" class="mt-3 text-muted small"></p>
   </div>
 

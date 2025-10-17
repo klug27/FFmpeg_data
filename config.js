@@ -7,10 +7,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const { FFmpeg } = FFmpegWASM;
   const ffmpeg = new FFmpeg();
   let ffmpegLoaded = false;
+  let cancelRequested = false;
 
   const convertVideoBtn = document.getElementById('convertVideoBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
   const videoInput = document.getElementById('videoInput');
-  const filterInput = document.getElementById('filterInput');
+  const fpsInput = document.getElementById('fpsInput');
+  const widthInput = document.getElementById('widthInput');
+  const heightInput = document.getElementById('heightInput');
   const progressContainer = document.getElementById('progressContainer');
   const progressBar = document.getElementById('progressBar');
   const spinner = document.getElementById('spinner');
@@ -30,6 +34,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   ffmpeg.on('log', ({ message }) => console.log(message));
 
+  cancelBtn.addEventListener('click', () => {
+    cancelRequested = true;
+    log.textContent = "⛔ Conversion annulée par l'utilisateur.";
+    spinner.classList.add('d-none');
+    convertVideoBtn.disabled = false;
+  });
+
   convertVideoBtn.addEventListener('click', async () => {
     const file = videoInput.files[0];
     if (!file) {
@@ -37,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    cancelRequested = false;
     convertVideoBtn.disabled = true;
     log.textContent = "Préparation de FFmpeg...";
     progressReceived = false;
@@ -67,18 +79,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const args = ['-i', inputName];
 
-    const vf = filterInput.value.trim();
-    if (vf) {
-      args.push('-vf', vf);
+    // Construction dynamique du filtre -vf
+    const vfParts = [];
+
+    const width = widthInput.value.trim();
+    const height = heightInput.value.trim();
+    if (width && height) {
+      vfParts.push(`scale=${width}:${height}`);
+    }
+
+    const fps = fpsInput.value.trim();
+    if (fps) {
+      vfParts.push(`fps=${fps}`);
+    }
+
+    if (vfParts.length > 0) {
+      args.push('-vf', vfParts.join(','));
     }
 
     args.push('-pix_fmt', 'bgr24', 'output.rgb');
+
+    if (cancelRequested) {
+      log.textContent = "⛔ Conversion annulée avant exécution.";
+      spinner.classList.add('d-none');
+      convertVideoBtn.disabled = false;
+      return;
+    }
 
     try {
       await ffmpeg.exec(args);
     } catch (err) {
       log.textContent = "❌ Erreur pendant la conversion.";
       console.error(err);
+      spinner.classList.add('d-none');
+      convertVideoBtn.disabled = false;
+      return;
+    }
+
+    if (cancelRequested) {
+      log.textContent = "⛔ Conversion interrompue après exécution.";
       spinner.classList.add('d-none');
       convertVideoBtn.disabled = false;
       return;
@@ -101,5 +140,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     spinner.classList.add('d-none');
     convertVideoBtn.disabled = false;
+
+    // Nettoyage mémoire
+    ffmpeg.deleteFile(inputName);
+    ffmpeg.deleteFile('output.rgb');
   });
 });

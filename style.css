@@ -24,8 +24,8 @@ input[type="file"] {
   cursor: pointer;
 }
 
-/* 🧠 Input texte (filtre FFmpeg) */
-input[type="text"] {
+/* 🧠 Inputs numériques (fps, scale) */
+input[type="number"] {
   font-size: 0.95rem;
 }
 
@@ -63,7 +63,12 @@ button:disabled {
 /* 🧭 Focus visible pour accessibilité */
 button:focus,
 input[type="file"]:focus,
-input[type="text"]:focus {
+input[type="number"]:focus {
   outline: 2px solid #0d6efd;
   outline-offset: 2px;
+}
+
+/* ⛔ Bouton d’annulation */
+#cancelBtn {
+  font-weight: bold;
 }
