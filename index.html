@@ -2,23 +2,25 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Convertisseur Image → BMP</title>
+  <title>Convertisseur Vidéo → RGB</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="style.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Préchargement FFmpeg -->
+  <link rel="preload" href="/ffmpeg/ffmpeg-core.js" as="script">
+  <link rel="preload" href="/ffmpeg/ffmpeg-core.wasm" as="fetch" type="application/wasm" crossorigin>
+  <link rel="preload" href="/ffmpeg/ffmpeg-core.worker.js" as="script">
 </head>
 <body>
   <div class="container text-center mt-5">
-    <h1>🖼️ Convertisseur Image → BMP</h1>
+    <h1>🎥 Convertisseur Vidéo → RGB brut</h1>
 
-    <input type="file" id="imageInput" accept="image/*" class="form-control mb-3">
+    <input type="file" id="videoInput" accept="video/*" class="form-control mb-3">
 
-    <div class="form-check form-switch mb-3 text-start">
-      <input class="form-check-input" type="checkbox" id="resizeToggle">
-      <label class="form-check-label" for="resizeToggle">📐 Redimensionner à 192×160</label>
-    </div>
+    <input type="text" id="filterInput" class="form-control mb-3" placeholder="Filtre FFmpeg (ex: scale=192:160)">
 
-    <button id="convertBtn" class="btn btn-primary w-100 mb-3">Convertir en BMP</button>
+    <button id="convertVideoBtn" class="btn btn-primary w-100 mb-3">Convertir en .RGB</button>
 
     <!-- Spinner circulaire -->
     <div id="spinner" class="d-none text-center mb-3">
@@ -32,8 +34,7 @@
       <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="progressBar" style="width: 0%">0%</div>
     </div>
 
-    <img id="preview" class="mt-3 w-100 d-none" alt="Image convertie">
-    <a id="downloadLink" class="btn btn-success mt-3 d-none" download="converted.bmp">📥 Télécharger BMP</a>
+    <a id="downloadLink" class="btn btn-success mt-3 d-none" download="converted.rgb">📥 Télécharger RGB</a>
     <p id="log" class="mt-3 text-muted small"></p>
   </div>
 

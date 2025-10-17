@@ -1,13 +1,16 @@
+/* 🌙 Fond et typographie */
 body {
   background-color: #f8f9fa;
   font-family: system-ui, sans-serif;
 }
 
+/* 📦 Conteneur central */
 .container {
   max-width: 600px;
   margin: auto;
 }
 
+/* 🎥 Aperçu vidéo ou image */
 video,
 img {
   border: 1px solid #dee2e6;
@@ -16,28 +19,51 @@ img {
   object-fit: contain;
 }
 
+/* 📂 Input fichier */
 input[type="file"] {
   cursor: pointer;
 }
 
+/* 🧠 Input texte (filtre FFmpeg) */
+input[type="text"] {
+  font-size: 0.95rem;
+}
+
+/* 🚫 Bouton désactivé */
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
+/* 🔄 Barre de progression */
 .progress-bar {
   transition: width 0.4s ease;
   color: green;
 }
 
+/* 📥 Lien de téléchargement */
 #downloadLink {
   display: inline-block;
   padding: 10px 20px;
   font-weight: bold;
 }
 
+/* 🧾 Log d’état */
 #log {
   font-size: 0.9rem;
   color: #6c757d;
 }
 
+/* ❌ Message d’erreur (optionnel) */
+#errorMsg {
+  color: #dc3545;
+  font-size: 0.9rem;
+}
+
+/* 🧭 Focus visible pour accessibilité */
+button:focus,
+input[type="file"]:focus,
+input[type="text"]:focus {
+  outline: 2px solid #0d6efd;
+  outline-offset: 2px;
+}

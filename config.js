@@ -8,13 +8,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const ffmpeg = new FFmpeg();
   let ffmpegLoaded = false;
 
-  const convertBtn = document.getElementById('convertBtn');
-  const imageInput = document.getElementById('imageInput');
-  const resizeToggle = document.getElementById('resizeToggle');
+  const convertVideoBtn = document.getElementById('convertVideoBtn');
+  const videoInput = document.getElementById('videoInput');
+  const filterInput = document.getElementById('filterInput');
   const progressContainer = document.getElementById('progressContainer');
   const progressBar = document.getElementById('progressBar');
   const spinner = document.getElementById('spinner');
-  const preview = document.getElementById('preview');
   const downloadLink = document.getElementById('downloadLink');
   const log = document.getElementById('log');
 
@@ -31,24 +30,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   ffmpeg.on('log', ({ message }) => console.log(message));
 
-  convertBtn.addEventListener('click', async () => {
-    const file = imageInput.files[0];
+  convertVideoBtn.addEventListener('click', async () => {
+    const file = videoInput.files[0];
     if (!file) {
-      alert("📂 Veuillez d'abord sélectionner une image.");
+      alert("📂 Veuillez sélectionner une vidéo.");
       return;
     }
 
-    convertBtn.classList.add('btn-converting');
-    convertBtn.disabled = true;
+    convertVideoBtn.disabled = true;
     log.textContent = "Préparation de FFmpeg...";
     progressReceived = false;
 
-    // Affiche le spinner immédiatement
     spinner.classList.remove('d-none');
-    // Prépare la barre mais ne l'affiche que si nécessaire
     progressBar.style.width = '0%';
     progressBar.textContent = '0%';
     progressContainer.classList.add('d-none');
+    downloadLink.classList.add('d-none');
 
     if (!ffmpegLoaded) {
       await ffmpeg.load({
@@ -69,24 +66,33 @@ document.addEventListener('DOMContentLoaded', () => {
     await ffmpeg.writeFile(inputName, inputData);
 
     const args = ['-i', inputName];
-    if (resizeToggle.checked) {
-      args.push('-vf', 'scale=192:160');
+
+    const vf = filterInput.value.trim();
+    if (vf) {
+      args.push('-vf', vf);
     }
-    args.push('-pix_fmt', 'bgr24', 'output.bmp');
 
-    await ffmpeg.exec(args);
+    args.push('-pix_fmt', 'bgr24', 'output.rgb');
 
-    const outputData = await ffmpeg.readFile('output.bmp');
-    const bmpBlob = new Blob([outputData.buffer], { type: 'image/bmp' });
-    const bmpURL = URL.createObjectURL(bmpBlob);
+    try {
+      await ffmpeg.exec(args);
+    } catch (err) {
+      log.textContent = "❌ Erreur pendant la conversion.";
+      console.error(err);
+      spinner.classList.add('d-none');
+      convertVideoBtn.disabled = false;
+      return;
+    }
 
-    preview.src = bmpURL;
-    preview.classList.remove('d-none');
-    downloadLink.href = bmpURL;
+    const outputData = await ffmpeg.readFile('output.rgb');
+    const rgbBlob = new Blob([outputData.buffer], { type: 'application/octet-stream' });
+    const rgbURL = URL.createObjectURL(rgbBlob);
+
+    downloadLink.href = rgbURL;
+    downloadLink.download = 'converted.rgb';
     downloadLink.classList.remove('d-none');
-    log.textContent = "✅ Conversion terminée.";
+    log.textContent = `✅ Conversion terminée. Taille : ${rgbBlob.size} octets.`;
 
-    // Affiche la barre uniquement si FFmpeg a fourni un ratio
     if (progressReceived) {
       progressContainer.classList.remove('d-none');
     } else {
@@ -94,7 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     spinner.classList.add('d-none');
-    convertBtn.classList.remove('btn-converting');
-    convertBtn.disabled = false;
+    convertVideoBtn.disabled = false;
   });
 });
